@@ -9,7 +9,7 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # Define the path to the model files within the container
-model_dir = "/app/model"
+model_dir = "model"
 
 # Load the model
 def load_model():
@@ -84,14 +84,20 @@ def prediction(path):
 def predict():
     # Get the file from the request
     file = request.files["file"]
-    file.save("temp_audio.wav")  # Save the file temporarily
+    file_path = "temp_audio.wav"
+    file.save(file_path)  # Save the file temporarily
 
-    emotion = prediction("temp_audio.wav")
+    emotion = prediction(file_path, model)
 
-    os.remove("temp_audio.wav")  # Remove the temporary file
+    os.remove(file_path)  # Remove the temporary file
 
     return jsonify({"emotion": emotion})
 
 if __name__ == "__main__":
     model = load_model()  # Load the model once
-    app.run(host="0.0.0.0", port=5000)  # Run Flask app
+
+    # Heroku provides the port dynamically, so we use the PORT environment variable
+    port = int(os.environ.get("PORT", 5000))
+    
+    # We bind to "0.0.0.0" to allow external connections
+    app.run(host="0.0.0.0", port=port)
